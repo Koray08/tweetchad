@@ -9,8 +9,6 @@ const secret = process.env.SECRET;
 const prisma = new PrismaClient();
 const app = express();
 
-let myUser;
-
 app.use(express.json());
 app.use(
   cors({
@@ -71,7 +69,7 @@ app.post("/register", async (req, res) => {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
-    const myUser = await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         username: req.body.username,
         password: hashedPassword,
@@ -79,7 +77,7 @@ app.post("/register", async (req, res) => {
       },
     });
 
-    const JWToken = jwt.sign({ id: myUser.id }, secret, { expiresIn: "1h" });
+    const JWToken = jwt.sign({ id: user.id }, secret, { expiresIn: "1h" });
     res.cookie("tweetJWT", JWToken, {
       httpOnly: true,
       maxAge: 3600000, // 1 hour
@@ -88,9 +86,9 @@ app.post("/register", async (req, res) => {
     });
 
     res.json({
-      id: myUser.id,
-      username: myUser.username,
-      email: myUser.email,
+      id: user.id,
+      username: user.username,
+      email: user.email,
     });
   } catch (error) {
     console.error(error);
@@ -99,22 +97,22 @@ app.post("/register", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  let users;
+  let user;
   try {
-    users = await prisma.user.findMany();
+    user = await prisma.user.findUnique({
+      where: {
+        email: req.body.email,
+      },
+    });
   } catch (error) {
-    console.error(error);
-  }
-
-  if (users) {
-    myUser = users.find((user) => user.email == req.body.email);
-  } else {
-    return res.status(400).send("Cannot find user");
+    res.status(400).send("Cannot find user");
   }
 
   try {
-    if (await bcrypt.compare(req.body.password, myUser.password)) {
-      const JWToken = jwt.sign({ id: myUser.id }, secret, { expiresIn: "1h" });
+    if (await bcrypt.compare(req.body.password, user.password)) {
+      const JWToken = jwt.sign({ id: user.id }, secret, {
+        expiresIn: "1h",
+      });
       res.cookie("tweetJWT", JWToken, {
         httpOnly: true,
         maxAge: 3600000, // 1 hour
@@ -123,9 +121,9 @@ app.post("/login", async (req, res) => {
       });
 
       res.json({
-        id: myUser.id,
-        username: myUser.username,
-        email: myUser.email,
+        id: user.id,
+        username: user.username,
+        email: user.email,
       });
     } else {
       res.status(403).send("Wrong username/password combination!");
@@ -282,8 +280,8 @@ app.patch(
   }
 );
 
-app.get("/like/:id", authenticateToken, async (req, res) => {
-  const currentUserID = req.params.id;
+app.get("/like", authenticateToken, async (req, res) => {
+  const currentUserID = req.user.id;
   try {
     const currentUserLikes = await prisma.like.findMany({
       where: {

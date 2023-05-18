@@ -5,6 +5,7 @@
   import { emailRegex } from "../helpers/utils.js";
   import { user } from "../store/userStore.js";
 
+  console.log($user.id);
   if ($user.id) {
     push("/home");
   }

@@ -52,7 +52,7 @@
 
   const fetchMyLikes = async () => {
     try {
-      const response = await axios.get(`/like/${$user.id}`);
+      const response = await axios.get("/like");
 
       myLikes = response.data.map((like) => like.postId);
     } catch (error) {
