@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-[#FEFEFF];
+}
+
+input:focus {
+  @apply !outline-none;
+}
+
+.modal-box {
+  @apply h-[50%] p-0 overflow-y-auto;
+}
+
+.btn-primary:hover {
+  @apply !bg-lokiGrey;
+}
+
+[contenteditable="true"] {
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
+}
+
+[contenteditable="true"][data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: gray;
+}
