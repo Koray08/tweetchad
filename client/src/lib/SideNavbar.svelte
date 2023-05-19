@@ -10,12 +10,6 @@
   let loading = false;
 
   const logout = async () => {
-    try {
-      await axios.get("/logout");
-    } catch (error) {
-      console.error(error);
-    }
-
     updateUser(null, null, null);
     localStorage.clear();
     push("/");
