@@ -18,6 +18,7 @@ model user {
   email      String   @unique @db.VarChar(155)
   posts      post[]
   likes      like[] 
+  comments   comment[]
 }
 
 model post {
@@ -27,6 +28,7 @@ model post {
   userId    String
   author    user     @relation(fields: [userId], references: [id], onDelete: Cascade)
   likes     like[]
+  comments  comment[]
 }
 
 model like {
@@ -38,4 +40,14 @@ model like {
   post      post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
+}
+
+model comment {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  content   String  
+  author    user     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String 
+  post      post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    Int
 }

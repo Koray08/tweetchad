@@ -4,7 +4,7 @@
   import { user } from "../store/userStore.js";
   import axios from "axios";
   import { onMount } from "svelte";
-  import { focus } from "../helpers/utils.js";
+  import { focus, dateCalculator } from "../helpers/utils.js";
 
   export let post;
   export let liked = false;
@@ -12,8 +12,10 @@
   export let fetchMyLikes;
   export let isNewPost;
   let editing = false;
-  let postLikes;
-  let postLikesLength;
+  let postCreatedTime = dateCalculator(post.createdAt);
+  let postLikes = "";
+  let reply = "";
+  let comments = "";
 
   const updatePost = async () => {
     try {
@@ -64,47 +66,52 @@
       const response = await axios.get(`/post/${post.id}`);
 
       postLikes = response.data;
-      postLikesLength = postLikes.length;
       fetchMyLikes();
     } catch (error) {
       console.error(error);
     }
   };
 
-  const now = new Date();
-  const messageTime = new Date(post.createdAt);
-  const diffInMilliseconds = now.getTime() - messageTime.getTime();
-  const diffInSeconds = Math.round(diffInMilliseconds / 1000);
-  const diffInMinutes = Math.round(diffInMilliseconds / 60000);
-  const diffInHours = Math.round(diffInMilliseconds / 3600000);
+  const getPostComments = async () => {
+    try {
+      const response = await axios.get(`/comment/${post.id}`);
 
-  let elapsedTime;
-  if (diffInSeconds < 60) {
-    elapsedTime = diffInSeconds + "s";
-  } else if (diffInMinutes < 60) {
-    elapsedTime = diffInMinutes + "m";
-  } else if (diffInHours < 24) {
-    elapsedTime = diffInHours + "h";
-  } else {
-    const messageYear = messageTime.getFullYear();
-    const currentYear = now.getFullYear();
-    const showYear = messageYear !== currentYear;
-    const dateOptions = {
-      month: "short",
-      day: "numeric",
-    };
-    if (showYear) {
-      dateOptions.year = "numeric";
+      comments = response.data.reverse();
+    } catch (error) {
+      console.log(error);
     }
-    elapsedTime = messageTime
-      .toLocaleString(undefined, dateOptions)
-      .split(" ")
-      .reverse()
-      .join(" ");
-  }
+  };
+
+  const addComment = async () => {
+    try {
+      const response = await axios.post("/comment", {
+        postID: post.id,
+        content: reply,
+      });
+
+      const newComment = response.data;
+      newComment.isNewComment = true;
+      reply = "";
+
+      comments = [newComment, ...comments];
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const removeComment = async (id) => {
+    try {
+      const response = await axios.delete(`/comment/${id}`);
+
+      comments = comments.filter((comment) => comment.id !== response.data.id);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   onMount(() => {
     getPostLikes();
+    getPostComments();
   });
 </script>
 
@@ -114,7 +121,7 @@
       <div class="font-bold">{post.author.username}</div>
       <div class="">{post.author.email}</div>
       {#if !isNewPost}
-        <div>• {elapsedTime}</div>
+        <div>• {postCreatedTime}</div>
       {/if}
     </div>
 
@@ -125,18 +132,21 @@
             on:click={() => {
               editing = false;
               updatePost();
-            }}><i class="fa-solid fa-check text-twitterBlue" /></button
+            }}
+            ><i
+              class="fa-solid fa-check text-twitterBlue active:scale-95"
+            /></button
           >
         {:else}
           <button on:click={() => (editing = true)}
             ><i
-              class="fa-solid fa-pen text-twitterBlue hover:text-lokiBlack"
+              class="fa-solid fa-pencil hover:text-twitterBlue"
             /></button
           >
         {/if}
         <button on:click={() => deletePost(post.id)}
           ><i
-            class="fa-solid fa-trash text-twitterRed hover:text-lokiBlack"
+            class="fa-regular fa-trash-can text-lg hover:text-twitterRed"
           /></button
         >
       </div>
@@ -157,6 +167,20 @@
   {/if}
 
   <div class="flex gap-2 items-center mt-2">
+    <label
+      for={`comments-modal-${post.id}`}
+      class="cursor-pointer w-max mr-2 flex items-center gap-2"
+    >
+      <span class="font-bold"
+        ><i
+          class="fa-regular fa-comment text-twitterBlue text-xl hover:text-blue-800"
+        /></span
+      >
+      {#if comments.length}
+        <div class="font-bold">{comments.length}</div>
+      {/if}
+    </label>
+
     <div class="text-xl cursor-pointer transition w-max">
       {#if liked}
         <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -165,17 +189,17 @@
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <i
           on:click={addLike}
-          class="fa-regular fa-heart hover:text-twitterRed transition"
+          class="fa-regular fa-heart hover:text-twitterRed"
         />
       {/if}
     </div>
 
-    {#if postLikesLength}
+    {#if postLikes.length}
       <label
         for={`likes-modal-${post.id}`}
         class="cursor-pointer w-max hover:underline"
       >
-        <span class="font-bold">{postLikesLength}</span>
+        <span class="font-bold">{postLikes.length}</span>
         likes
       </label>
     {/if}
@@ -183,7 +207,7 @@
 
   <input type="checkbox" id={`likes-modal-${post.id}`} class="modal-toggle" />
   <label for={`likes-modal-${post.id}`} class="modal cursor-pointer">
-    <label class="modal-box relative" for="">
+    <label class="modal-box relative h-[40%] overflow-y-auto" for="">
       <h2 class="font-bold text-xl items mx-auto p-4">Liked by</h2>
       {#if postLikes}
         <div class="flex flex-col gap-1 text-base">
@@ -195,6 +219,72 @@
           {/each}
         </div>
       {/if}
+    </label>
+  </label>
+
+  <input
+    type="checkbox"
+    id={`comments-modal-${post.id}`}
+    class="modal-toggle"
+  />
+  <label for={`comments-modal-${post.id}`} class="modal cursor-pointer">
+    <label
+      class="modal-box relative min-h-[45%] lg:max-h-[75%] lg:!max-w-[45%] !break-words"
+      for=""
+    >
+      <div class="p-4">
+        <div class="flex gap-2">
+          <div class="font-bold">{post.author.username}</div>
+          <div>{post.author.email}</div>
+          <div>{postCreatedTime}</div>
+        </div>
+        <div class="mt-2 mb-4 text-lg">{post.content}</div>
+        <div>
+          Replying to <span class="text-twitterBlue"
+            >@{post.author.username}</span
+          >
+        </div>
+      </div>
+      <div class="my-auto border-t border-twitterGray px-4 py-3 flex flex-col">
+        <div
+          use:focus={focus}
+          contenteditable="true"
+          class="focus:outline-none bg-transparent w-full h-full cursor-text text-base"
+          data-placeholder="Tweet your reply!"
+          bind:textContent={reply}
+        />
+        <button
+          class="btn bg-twitterBlue border-none transition rounded-3xl mt-3 ml-auto"
+          on:click={addComment}
+          disabled={!reply}>Reply</button
+        >
+      </div>
+      <div class="border-t border-twitterGray">
+        {#each comments as comment}
+          <div
+            class="border-b border-twitterGray px-4 py-2 flex justify-between"
+          >
+            <div class="w-11/12">
+              <div class="flex gap-2 !overflow-hidden">
+                <div class="font-bold">{comment.author.username}</div>
+                <div>{comment.author.email}</div>
+                {#if !comment.isNewComment}
+                  <div>• {dateCalculator(comment.createdAt)}</div>
+                {/if}
+              </div>
+              <div>{comment.content}</div>
+            </div>
+
+            {#if $user.id === comment.author.id}
+              <button class="my-auto" on:click={() => removeComment(comment.id)}
+                ><i
+                  class="fa-regular fa-trash-can text-lg hover:text-twitterRed transition"
+                /></button
+              >
+            {/if}
+          </div>
+        {/each}
+      </div>
     </label>
   </label>
 </div>

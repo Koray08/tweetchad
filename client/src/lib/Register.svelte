@@ -66,18 +66,6 @@
 
     loading = false;
   };
-
-  const validateJWT = async () => {
-    try {
-      const response = await axios.get("/validateJWT");
-
-      if (response.data == "Success") {
-        push("/home");
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
 </script>
 
 <div>

@@ -37,22 +37,20 @@ export const createPostLike = async (req, res) => {
 export const removePostLike = async (req, res) => {
   try {
     const userID = req.user.id;
-    const postID = req.params.postID;
+    const postID = parseInt(req.params.postID);
 
     const like = await prisma.like.findUnique({
       where: {
         userId_postId: {
           userId: userID,
-          postId: parseInt(postID),
+          postId: postID,
         },
       },
     });
 
-    const likeID = like.id;
-
     await prisma.like.delete({
       where: {
-        id: likeID,
+        id: like.id,
       },
     });
 

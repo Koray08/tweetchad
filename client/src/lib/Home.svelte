@@ -122,8 +122,6 @@
           bind:textContent={content}
         />
 
-        <div class="w-full h-1 bg-twitterGray" />
-
         <button
           class="btn bg-twitterBlue border-none transition rounded-3xl mt-3"
           on:click={createPost}
@@ -168,7 +166,7 @@
       <button
         on:click={loadMore}
         id="loadmore"
-        class="btn bg-twitterBlue border-none my-5 mx-auto w-1/2"
+        class="btn bg-twitterBlue border-none my-5 mx-auto w-1/2 rounded-xl"
         disabled={loading}
         class:loading
       >

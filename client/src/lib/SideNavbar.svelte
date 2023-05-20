@@ -76,7 +76,7 @@
       <div class="divider" />
       <button
         on:click={logout}
-        class="btn btn-primary bg-lokiBlack"
+        class="btn btn-primary bg-lokiBlack rounded-xl w-full"
         class:loading
         disabled={loading}
       >
@@ -84,7 +84,7 @@
       </button>
       <button
         on:click={deleteAccount}
-        class="btn btn-primary bg-twitterRed mt-2"
+        class="btn btn-primary bg-twitterRed mt-2 rounded-xl w-full"
         class:loading
         disabled={loading}
       >

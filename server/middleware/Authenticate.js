@@ -47,3 +47,30 @@ export const postAuthorization = async (req, res, next) => {
 
   next();
 };
+
+export const commentAuthorization = async (req, res, next) => {
+  const commentId = parseInt(req.params.id);
+  let comment;
+
+  try {
+    comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { author: { select: { id: true } } },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send("Internal server error");
+  }
+
+  if (!comment) {
+    return res.status(404).json({ message: "Post not found" });
+  }
+
+  if (comment.author.id !== req.user.id) {
+    return res
+      .status(401)
+      .send("Unauthorized: You are not the author of this comment");
+  }
+
+  next();
+};
